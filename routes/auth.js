@@ -2,6 +2,7 @@ const router = require('express').Router();
 const hub = require('hub');
 const jwt = require("jsonwebtoken");
 const uniqueId = require('uniqid');
+const authToken = require('../utils');
 
 router.post('/login', (request, response) => {
     const {username, password} = request.body;
@@ -26,7 +27,7 @@ router.post('/login', (request, response) => {
 });
 
 router.post('/register', (request, response) => {
-    const { full_name, username, password } = request.body;
+    const {full_name, username, password} = request.body;
     if (full_name == null || username == null || password == null)
         return response.status(400).send('required parameters missing');
 
@@ -57,7 +58,7 @@ router.post('/register', (request, response) => {
         });
 });
 
-router.post('/logout', (request, response) => {
+router.post('/logout', authToken, (request, response) => {
     // get the jwt
 });
 

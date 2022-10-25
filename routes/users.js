@@ -3,7 +3,7 @@ const hub = require('hub');
 const uniqueId = require('uniqid');
 const authToken = require('../utils');
 
-router.get('/', (request, response) => {
+router.get('/', authToken, (request, response) => {
     hub.dbPool.query('SELECT * FROM users', (error, results) => {
         if (error) return response.status(500).send(error.description);
         response.status(200).json(results.rows);
@@ -20,7 +20,7 @@ router.get('/:id', authToken, (request, response) => {
     });
 });
 
-router.post('/', (request, response) => {
+router.post('/', authToken, (request, response) => {
     const {full_name, username, password} = request.body;
     const identifier = uniqueId();
     hub.dbPool.query('INSERT INTO users (identifier, full_name, username, password) VALUES ($1, $2, $3, $4)',
@@ -30,7 +30,7 @@ router.post('/', (request, response) => {
         });
 });
 
-router.put('/:id', (request, response) => {
+router.put('/:id', authToken, (request, response) => {
     const id = parseInt(request.params.id);
     if (isNaN(id))
         return response.status(400).send('invalid id');
@@ -42,7 +42,7 @@ router.put('/:id', (request, response) => {
         });
 });
 
-router.delete('/:id', (request, response) => {
+router.delete('/:id', authToken, (request, response) => {
     const id = parseInt(request.params.id);
     if (isNaN(id))
         return response.status(400).send('invalid id');
