@@ -6,8 +6,11 @@ const authToken = require('../utils');
 
 router.post('/login', (request, response) => {
     const {username, password} = request.body;
-    hub.dbPool.query('SELECT * FROM users WHERE username = $1 AND password = $2 LIMIT 1',
-        [username, password], (error, results) => {
+    hub.dbPool.query(`
+        SELECT u.*, row_to_json(t.*) AS town
+        FROM users u
+        LEFT JOIN towns t ON u.id_town = t.id_town
+        WHERE (username = $1) AND (password = $2) LIMIT 1`, [username, password], (error, results) => {
             if (error) return response.status(500).send(error.description);
             if (results.rows.length !== 1)
                 return response.status(400).send('invalid credentials');
@@ -37,8 +40,11 @@ router.post('/register', (request, response) => {
             if (error) return response.status(500).send(error.message);
 
             // query the newly inserted user
-            hub.dbPool.query('SELECT * FROM users WHERE username = $1 AND password = $2 LIMIT 1',
-                [username, password], (error, results) => {
+            hub.dbPool.query(`
+            SELECT u.*, row_to_json(t.*) AS town
+            FROM users u
+            LEFT JOIN towns t ON u.id_town = t.id_town
+            WHERE (username = $1) AND (password = $2) LIMIT 1`, [username, password], (error, results) => {
                     if (error) return response.status(500).send(error.description);
                     if (results.rows.length !== 1)
                         return response.status(400).send('invalid credentials');
