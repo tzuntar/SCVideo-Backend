@@ -4,7 +4,10 @@ const uniqueId = require('uniqid');
 const authToken = require('../utils');
 
 router.get('/', authToken, (request, response) => {
-    hub.dbPool.query('SELECT * FROM users', (error, results) => {
+    hub.dbPool.query(`
+        SELECT u.*, row_to_json(t.*) AS town
+        FROM users u
+        LEFT JOIN towns t ON u.id_town = t.id_town`, (error, results) => {
         if (error) return response.status(500).send(error.description);
         response.status(200).json(results.rows);
     });
@@ -14,7 +17,11 @@ router.get('/:id', authToken, (request, response) => {
     const id = parseInt(request.params.id);
     if (isNaN(id))
         return response.status(400).send('invalid id');
-    hub.dbPool.query('SELECT * FROM users WHERE id_user = $1 LIMIT 1', [id], (error, results) => {
+    hub.dbPool.query(`
+        SELECT u.*, row_to_json(t.*) AS town
+        FROM users u
+        LEFT JOIN towns t ON u.id_town = t.id_town
+        WHERE id_user = $1 LIMIT 1`, [id], (error, results) => {
         if (error) return response.status(500).send(error.description);
         response.status(200).json(results.rows);
     });
