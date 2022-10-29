@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const hub = require('hub');
 const authToken = require('../utils');
+const uniqueId = require('uniqid');
 const jwt = require("jsonwebtoken");
 
 router.get('/feed', authToken, (request, response) => {
@@ -34,6 +35,22 @@ router.get('/:id/comments', authToken, (request, response) => {
         if (error) return response.status(500).send(error.description);
         response.status(200).json(results.rows);
     })
+})
+
+router.post('/:id/comment', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('invalid id');
+    const { content, id_user } = request.body
+    if (content == null || id_user == null || isNaN(parseInt(id_user)))
+        return response.status(400).send('required parameters missing');
+    hub.dbPool.query(
+        `INSERT INTO comments (identifier, content, id_post, id_user) VALUES ($1, $2, $3, $4)`,
+        [uniqueId(), content, id, id_user], (error, results) => {
+            if (error) return response.status(500).send(error.message);
+            return response.sendStatus(200);
+        }
+    )
 })
 
 module.exports = router;
