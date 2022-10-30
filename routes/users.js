@@ -18,10 +18,13 @@ router.get('/:id', authToken, (request, response) => {
     if (isNaN(id))
         return response.status(400).send('invalid id');
     hub.dbPool.query(`
-        SELECT u.*, row_to_json(t.*) AS town
+        SELECT u.*, row_to_json(t.*) AS town,
+               jsonb_agg(p.*) FILTER (WHERE p.id_post IS NOT NULL) AS posts
         FROM users u
         LEFT JOIN towns t ON u.id_town = t.id_town
-        WHERE id_user = $1 LIMIT 1`, [id], (error, results) => {
+        LEFT JOIN posts p on u.id_user = p.id_user
+        WHERE u.id_user = $1
+        GROUP BY u.id_user, t.* LIMIT 1`, [id], (error, results) => {
         if (error) return response.status(500).send(error.description);
         response.status(200).json(results.rows);
     });
