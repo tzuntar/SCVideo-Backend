@@ -70,21 +70,30 @@ router.post('/:id/comment', authToken, (request, response) => {
 
 router.post('/:type', authToken, (request, response) => {
     try {
-        if (!request.files)
-            return response.status(400).send('file missing');
         const type = request.params.type;
         if (type == null || !/^text|photo|video$/.test(type))
             return response.status(400).send('invalid post type');
+        if (type !== 'text' && !request.files)
+            return response.status(400).send('file missing');
         const {title, description, id_user} = request.body;
         const identifier = uniqueId();
         if (isNaN(parseInt(id_user)))
             return response.status(400).send('required parameters missing or invalid');
 
-        let video = request.files.video;
-        let filename = path.join(__dirname, 'public', 'posts', 'videos')
-            + identifier + '_' + video.name;
-        video.mv(filename);
-        let contentUri = hub.topLevelAddress + '/posts/' + identifier;
+        let contentUri = null;
+        if (type === 'photo') {
+            let photo = request.files.photo;
+            let filename = path.join(__dirname, 'public', 'posts', 'photos')
+                + identifier + '_' + photo.name;
+            photo.mv(filename);
+            contentUri = hub.topLevelAddress + '/posts/' + identifier;
+        } else if (type === 'video') {
+            let video = request.files.video;
+            let filename = path.join(__dirname, 'public', 'posts', 'videos')
+                + identifier + '_' + video.name;
+            video.mv(filename);
+            contentUri = hub.topLevelAddress + '/posts/' + identifier;
+        }
 
         hub.dbPool.query(
             `INSERT INTO posts (identifier, title, description, content_uri, id_user) VALUES ($1, $2, $3, $4, $5)`,
