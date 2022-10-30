@@ -3,6 +3,22 @@ const hub = require('hub');
 const authToken = require('../utils');
 const uniqueId = require('uniqid');
 const jwt = require("jsonwebtoken");
+const path = require("path");
+
+router.get('/:identifier', authToken, (request, response) => {
+    if (request.params.identifier == null)
+        return response.status(400).send('invalid identifier');
+    hub.dbPool.query(`
+        SELECT p.*, row_to_json(u.*) AS user
+        FROM posts p
+                 LEFT JOIN users u on p.id_user = u.id_user
+        WHERE p.identifier = $1
+        GROUP BY p.id_post, u.id_user
+        LIMIT 1`, [request.params.identifier], (error, results) => {
+        if (error) return response.status(500).send(error.description);
+        response.status(200).json(results.rows);
+    });
+})
 
 router.get('/feed', authToken, (request, response) => {
     const authHeader = request.headers['authorization'];
@@ -18,8 +34,7 @@ router.get('/feed', authToken, (request, response) => {
             response.status(200).json(results.rows);
         });
     } catch (error) {
-        console.log(error);
-        return response.sendStatus(400);
+        return response.status(500).send(error);
     }
 })
 
@@ -51,6 +66,36 @@ router.post('/:id/comment', authToken, (request, response) => {
             return response.sendStatus(200);
         }
     )
+})
+
+router.post('/:type', authToken, (request, response) => {
+    try {
+        if (!request.files)
+            return response.status(400).send('file missing');
+        const type = request.params.type;
+        if (type == null || !/^text|photo|video$/.test(type))
+            return response.status(400).send('invalid post type');
+        const {title, description, id_user} = request.body;
+        const identifier = uniqueId();
+        if (isNaN(parseInt(id_user)))
+            return response.status(400).send('required parameters missing or invalid');
+
+        let video = request.files.video;
+        let filename = path.join(__dirname, 'public', 'posts', 'videos')
+            + identifier + '_' + video.name;
+        video.mv(filename);
+        let contentUri = hub.topLevelAddress + '/posts/' + identifier;
+
+        hub.dbPool.query(
+            `INSERT INTO posts (identifier, title, description, content_uri, id_user) VALUES ($1, $2, $3, $4, $5)`,
+            [identifier, title, description, contentUri, id_user], (error, results) => {
+                if (error) return response.status(500).send(error.message);
+                return response.sendStatus(200);
+            }
+        )
+    } catch (error) {
+        response.status(500).send(error);
+    }
 })
 
 module.exports = router;

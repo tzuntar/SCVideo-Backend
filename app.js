@@ -1,5 +1,7 @@
 const createError = require('http-errors');
 const express = require('express');
+const fileUpload = require('express-fileupload');
+const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
@@ -16,6 +18,7 @@ hub.dbPool = new pg.Pool({
 
 hub.tokens = [];
 hub.tokenSecret = '4297qdcuv92g4039ideiuwhdj04u2tfeirjv47t93872019fjcn[sdkjslka21/!dfdsdf';
+hub.topLevelAddress = 'http://localhost:3000';
 
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
@@ -34,7 +37,14 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
+app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(fileUpload({
+    createParentPath: true,
+    limits: {
+        fileSize: 1024 * 1024 * 1024 * 1024 // 1 GB max file size
+    }
+}));
 
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
