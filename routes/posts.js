@@ -5,7 +5,7 @@ const uniqueId = require('uniqid');
 const jwt = require("jsonwebtoken");
 const path = require("path");
 
-router.get('/:identifier', authToken, (request, response) => {
+router.get('/one/:identifier', authToken, (request, response) => {
     if (request.params.identifier == null)
         return response.status(400).send('invalid identifier');
     hub.dbPool.query(`
