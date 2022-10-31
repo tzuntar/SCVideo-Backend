@@ -5,21 +5,6 @@ const uniqueId = require('uniqid');
 const jwt = require("jsonwebtoken");
 const path = require("path");
 
-router.get('/one/:identifier', authToken, (request, response) => {
-    if (request.params.identifier == null)
-        return response.status(400).send('invalid identifier');
-    hub.dbPool.query(`
-        SELECT p.*, row_to_json(u.*) AS user
-        FROM posts p
-                 LEFT JOIN users u on p.id_user = u.id_user
-        WHERE p.identifier = $1
-        GROUP BY p.id_post, u.id_user
-        LIMIT 1`, [request.params.identifier], (error, results) => {
-        if (error) return response.status(500).send(error.description);
-        response.status(200).json(results.rows);
-    });
-})
-
 router.get('/feed', authToken, (request, response) => {
     const authHeader = request.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -36,6 +21,21 @@ router.get('/feed', authToken, (request, response) => {
     } catch (error) {
         return response.status(500).send(error);
     }
+})
+
+router.get('/:identifier', authToken, (request, response) => {
+    if (request.params.identifier == null)
+        return response.status(400).send('invalid identifier');
+    hub.dbPool.query(`
+        SELECT p.*, row_to_json(u.*) AS user
+        FROM posts p
+                 LEFT JOIN users u on p.id_user = u.id_user
+        WHERE p.identifier = $1
+        GROUP BY p.id_post, u.id_user
+        LIMIT 1`, [request.params.identifier], (error, results) => {
+        if (error) return response.status(500).send(error.description);
+        response.status(200).json(results.rows);
+    });
 })
 
 router.get('/:id/comments', authToken, (request, response) => {

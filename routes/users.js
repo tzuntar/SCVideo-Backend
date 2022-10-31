@@ -2,6 +2,7 @@ const router = require('express').Router();
 const hub = require('hub');
 const uniqueId = require('uniqid');
 const authToken = require('../utils');
+const jwt = require("jsonwebtoken");
 
 router.get('/', authToken, (request, response) => {
     hub.dbPool.query(`
@@ -11,6 +12,25 @@ router.get('/', authToken, (request, response) => {
         if (error) return response.status(500).send(error.description);
         response.status(200).json(results.rows);
     });
+});
+
+router.get('/followers', authToken, (request, response) => {
+    const authHeader = request.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    try {
+        const userId = jwt.decode(token).id_user;
+        hub.dbPool.query(`
+            SELECT u.*, row_to_json(t.*) AS town
+            FROM users u
+            LEFT JOIN towns t ON u.id_town = t.id_town
+            INNER JOIN followers f ON f.id_followed_user = u.id_user
+            WHERE f.id_user = $1`, [userId], (error, results) => {
+            if (error) return response.status(500).send(error.description);
+            response.status(200).json(results.rows);
+        });
+    } catch (error) {
+        return response.status(500).send(error);
+    }
 });
 
 router.get('/:id', authToken, (request, response) => {
