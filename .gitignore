@@ -132,3 +132,7 @@ dist
 .idea/
 .DS_STORE
 package-lock.json
+
+# User Data
+public/images/profile
+public/posts

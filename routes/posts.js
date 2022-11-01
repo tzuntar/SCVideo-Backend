@@ -83,14 +83,14 @@ router.post('/:type', authToken, (request, response) => {
         let contentUri = null;
         if (type === 'photo') {
             let photo = request.files.photo;
-            let filename = path.join(__dirname, 'public', 'posts', 'photos')
-                + identifier + '_' + photo.name;
+            let filename = path.join(__dirname, '..', 'public', 'posts', 'photos',
+                identifier + '_' + photo.name);
             photo.mv(filename);
             contentUri = hub.topLevelAddress + '/posts/' + identifier;
         } else if (type === 'video') {
             let video = request.files.video;
-            let filename = path.join(__dirname, 'public', 'posts', 'videos')
-                + identifier + '_' + video.name;
+            let filename = path.join(__dirname, '..', 'public', 'posts', 'videos',
+                identifier + '_' + video.name);
             video.mv(filename);
             contentUri = hub.topLevelAddress + '/posts/' + identifier;
         }
@@ -103,6 +103,7 @@ router.post('/:type', authToken, (request, response) => {
             }
         )
     } catch (error) {
+        console.log(error);
         response.status(500).send(error);
     }
 })
