@@ -83,16 +83,16 @@ router.post('/:type', authToken, (request, response) => {
         let contentUri = null;
         if (type === 'photo') {
             let photo = request.files.photo;
-            let filename = path.join(__dirname, '..', 'public', 'posts', 'photos',
-                identifier + '_' + photo.name);
-            photo.mv(filename);
-            contentUri = hub.topLevelAddress + '/posts/' + identifier;
+            let fileName = identifier + '_' + photo.name;
+            let filePath = path.join(__dirname, '..', 'public', 'posts', 'photos', fileName);
+            photo.mv(filePath);
+            contentUri = hub.topLevelAddress + '/posts/photos/' + fileName;
         } else if (type === 'video') {
             let video = request.files.video;
-            let filename = path.join(__dirname, '..', 'public', 'posts', 'videos',
-                identifier + '_' + video.name);
-            video.mv(filename);
-            contentUri = hub.topLevelAddress + '/posts/' + identifier;
+            let fileName = identifier + '_' + video.name;
+            let filePath = path.join(__dirname, '..', 'public', 'posts', 'videos', fileName);
+            video.mv(filePath);
+            contentUri = hub.topLevelAddress + '/posts/videos/' + fileName
         }
 
         hub.dbPool.query(
