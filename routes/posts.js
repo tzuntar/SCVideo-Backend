@@ -68,6 +68,27 @@ router.post('/:id/comment', authToken, (request, response) => {
     )
 })
 
+router.post('/:id/like', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('invalid id');
+    const authHeader = request.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    try {
+        const userId = jwt.decode(token).id_user;
+        hub.dbPool.query(`
+            INSERT INTO reactions (id_post, id_user) VALUES ($1, $2)`, [id, userId], (error) => {
+            if (error.code === '23505')
+                return response.status(400).send('only one such reaction per post per user allowed')
+            if (error)
+                return response.status(500).send(error.description);
+            response.sendStatus(200);
+        });
+    } catch (error) {
+        return response.status(500).send(error);
+    }
+})
+
 router.post('/:type', authToken, (request, response) => {
     try {
         const type = request.params.type;
