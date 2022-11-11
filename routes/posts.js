@@ -4,6 +4,7 @@ const authToken = require('../utils');
 const uniqueId = require('uniqid');
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const exists = require('property-exists');
 
 router.get('/feed', authToken, (request, response) => {
     const authHeader = request.headers['authorization'];
@@ -11,9 +12,12 @@ router.get('/feed', authToken, (request, response) => {
     try {
         const userId = jwt.decode(token).id_user;
         hub.dbPool.query(`
-            SELECT p.*, row_to_json(u.*) AS user
+            SELECT p.*, row_to_json(u.*) AS user,
+                (CASE WHEN (count(r.id_reaction) > 0) THEN 1 ELSE 0 END) AS is_liked
             FROM posts p
-                LEFT JOIN users u on p.id_user = u.id_user
+            LEFT JOIN users u ON p.id_user = u.id_user
+            LEFT JOIN reactions r ON p.id_post = r.id_post
+                AND r.reaction = 'like'
             GROUP BY p.id_post, u.id_user`, (error, results) => {
             if (error) return response.status(500).send(error.description);
             response.status(200).json(results.rows);
@@ -27,9 +31,12 @@ router.get('/:identifier', authToken, (request, response) => {
     if (request.params.identifier == null)
         return response.status(400).send('invalid identifier');
     hub.dbPool.query(`
-        SELECT p.*, row_to_json(u.*) AS user
+        SELECT p.*, row_to_json(u.*) AS user,
+               (CASE WHEN (count(r.id_reaction) > 0) THEN 1 ELSE 0 END) AS is_liked
         FROM posts p
-                 LEFT JOIN users u on p.id_user = u.id_user
+                 LEFT JOIN users u ON p.id_user = u.id_user
+                 LEFT JOIN reactions r ON p.id_post = r.id_post
+            AND r.reaction = 'like'
         WHERE p.identifier = $1
         GROUP BY p.id_post, u.id_user
         LIMIT 1`, [request.params.identifier], (error, results) => {
@@ -78,11 +85,33 @@ router.post('/:id/like', authToken, (request, response) => {
         const userId = jwt.decode(token).id_user;
         hub.dbPool.query(`
             INSERT INTO reactions (id_post, id_user) VALUES ($1, $2)`, [id, userId], (error) => {
-            if (error.code === '23505')
-                return response.status(400).send('only one such reaction per post per user allowed')
+            if (exists(error, 'code'))
+                if (error.code === '23505') // already liked; dislike it
+                    return response.status(400).send('only one such reaction per post per user allowed')
             if (error)
                 return response.status(500).send(error.description);
             response.sendStatus(200);
+        });
+    } catch (error) {
+        return response.status(500).send(error);
+    }
+})
+
+router.post('/:id/unlike', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('invalid id');
+    const authHeader = request.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    try {
+        const userId = jwt.decode(token).id_user;
+        hub.dbPool.query(`DELETE FROM reactions
+                        WHERE (id_post = $1)
+                          AND (id_user = $2)
+                          AND (reaction = $3)`, [id, userId, 'like'], (error) => {
+            if (error)
+                return response.status(500).send(error.description);
+            response.status(200).send('unliked');
         });
     } catch (error) {
         return response.status(500).send(error);
