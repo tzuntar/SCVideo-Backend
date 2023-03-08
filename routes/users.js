@@ -3,6 +3,7 @@ const hub = require('hub');
 const uniqueId = require('uniqid');
 const authToken = require('../utils');
 const jwt = require("jsonwebtoken");
+const exists = require("property-exists");
 
 router.get('/', authToken, (request, response) => {
     hub.dbPool.query(`
@@ -24,6 +25,25 @@ router.get('/followers', authToken, (request, response) => {
             FROM users u
             LEFT JOIN towns t ON u.id_town = t.id_town
             INNER JOIN followers f ON f.id_followed_user = u.id_user
+            WHERE f.id_user = $1`, [userId], (error, results) => {
+            if (error) return response.status(500).send(error.description);
+            response.status(200).json(results.rows);
+        });
+    } catch (error) {
+        return response.status(500).send(error);
+    }
+});
+
+router.get('/friends', authToken, (request, response) => {
+    const authHeader = request.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    try {
+        const userId = jwt.decode(token).id_user;
+        hub.dbPool.query(`
+            SELECT u.*, row_to_json(t.*) AS town
+            FROM users u
+            LEFT JOIN towns t ON u.id_town = t.id_town
+            INNER JOIN followers f ON f.id_user = u.id_user
             WHERE f.id_user = $1`, [userId], (error, results) => {
             if (error) return response.status(500).send(error.description);
             response.status(200).json(results.rows);
@@ -81,5 +101,27 @@ router.delete('/:id', authToken, (request, response) => {
         response.status(200).send();
     });
 });
+
+router.post('/:id/add_friend', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('invalid id');
+    const authHeader = request.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    try {
+        const userId = jwt.decode(token).id_user;
+        hub.dbPool.query(`
+            INSERT INTO friends (id_user, id_followed_user) VALUES ($1, $2)`, [userId, id], (error) => {
+            if (exists(error, 'code'))
+                if (error.code === '23505') // already friends
+                    return response.status(400).send('already followed')
+            if (error)
+                return response.status(500).send(error.description);
+            response.sendStatus(200);
+        })
+    } catch (error) {
+        return response.status(500).send(error);
+    }
+})
 
 module.exports = router;
