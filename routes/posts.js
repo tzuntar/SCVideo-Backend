@@ -134,9 +134,9 @@ router.post('/:id/unlike', authToken, (request, response) => {
 router.post('/:type', authToken, (request, response) => {
     try {
         const type = request.params.type;
-        if (type == null || !/^text|photo|video$/.test(type))
+        if (type == null || !/^photo|video$/.test(type))
             return response.status(400).send('invalid post type');
-        if (type !== 'text' && !request.files)
+        if (!request.files)
             return response.status(400).send('file missing');
         const {title, description, id_user} = request.body;
         const identifier = uniqueId();
