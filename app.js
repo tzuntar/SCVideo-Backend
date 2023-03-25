@@ -8,6 +8,7 @@ const logger = require('morgan');
 const pg = require('pg');
 const hub = require('hub');
 
+require('dotenv').config();
 hub.dbPool = new pg.Pool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -16,9 +17,8 @@ hub.dbPool = new pg.Pool({
     port: process.env.DB_PORT
 });
 
+// ToDo: get rid of the following
 hub.tokens = [];
-hub.tokenSecret = '4297qdcuv92g4039ideiuwhdj04u2tfeirjv47t93872019fjcn[sdkjslka21/!dfdsdf';
-hub.topLevelAddress = 'http://localhost:3000';
 
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
@@ -26,8 +26,6 @@ const usersRouter = require('./routes/users');
 const postsRouter = require('./routes/posts');
 
 const app = express();
-
-require('dotenv').config();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

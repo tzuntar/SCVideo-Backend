@@ -149,13 +149,13 @@ router.post('/:type', authToken, (request, response) => {
             let fileName = identifier + '_' + photo.name;
             let filePath = path.join(__dirname, '..', 'public', 'posts', 'photos', fileName);
             photo.mv(filePath);
-            contentUri = hub.topLevelAddress + '/posts/photos/' + fileName;
+            contentUri = fileName;
         } else if (type === 'video') {
             let video = request.files.video;
             let fileName = identifier + '_' + video.name;
             let filePath = path.join(__dirname, '..', 'public', 'posts', 'videos', fileName);
             video.mv(filePath);
-            contentUri = hub.topLevelAddress + '/posts/videos/' + fileName
+            contentUri = fileName
         }
 
         hub.dbPool.query(
