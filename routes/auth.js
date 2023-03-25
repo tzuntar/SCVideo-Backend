@@ -33,7 +33,10 @@ function authenticateUser(username, password) {
                 const refreshToken = signRefreshToken(user);
                 if (!accessToken || !refreshToken)
                     reject();
-                return resolve({accessToken, refreshToken});
+                return resolve({
+                    user: user,
+                    token: {accessToken, refreshToken}
+                });
             })
             .catch((error) => {
                 console.log(error.stack)
@@ -62,7 +65,7 @@ router.post('/login', (req, res) => {
         return res.status(400).send('Missing required parameters');
 
     authenticateUser(username, password)
-        .then((tokens) => res.json(tokens))
+        .then((user) => res.json(user))
         .catch((error) => {
             console.log(`Login attempt failed for user ${username}: ${error}`);
             return res.status(401).send('Invalid credentials');
@@ -80,7 +83,7 @@ router.post('/register', (req, res) => {
             console.log(`Registration attempt failed for user ${username}: ${error}`);
             return res.status(401).send('Registration failed');
         })
-        .then((tokens) => res.json(tokens))
+        .then((user) => res.json(user))
         .catch(() => res.status(500));
 });
 
@@ -92,7 +95,7 @@ router.post('/refresh', (req, res) => {
         if (error)
             return res.sendStatus(403);
         const accessToken = signAccessToken(user);
-        res.json({accessToken});
+        res.json({accessToken, refreshToken});
     });
 });
 

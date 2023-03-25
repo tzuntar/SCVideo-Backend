@@ -17,9 +17,6 @@ hub.dbPool = new pg.Pool({
     port: process.env.DB_PORT
 });
 
-// ToDo: get rid of the following
-hub.tokens = [];
-
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
