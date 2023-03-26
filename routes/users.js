@@ -9,7 +9,7 @@ router.get('/', authToken, (request, response) => {
     hub.dbPool.query(`
         SELECT u.*, row_to_json(t.*) AS town
         FROM users u
-        LEFT JOIN towns t ON u.id_town = t.id_town`, (error, results) => {
+                 LEFT JOIN towns t ON u.id_town = t.id_town`, (error, results) => {
         if (error) return response.status(500).send(error.description);
         response.status(200).json(results.rows);
     });
@@ -23,8 +23,8 @@ router.get('/followers', authToken, (request, response) => {
         hub.dbPool.query(`
             SELECT u.*, row_to_json(t.*) AS town
             FROM users u
-            LEFT JOIN towns t ON u.id_town = t.id_town
-            INNER JOIN followers f ON f.id_followed_user = u.id_user
+                     LEFT JOIN towns t ON u.id_town = t.id_town
+                     INNER JOIN followers f ON f.id_followed_user = u.id_user
             WHERE f.id_user = $1`, [userId], (error, results) => {
             if (error) return response.status(500).send(error.description);
             response.status(200).json(results.rows);
@@ -42,8 +42,8 @@ router.get('/friends', authToken, (request, response) => {
         hub.dbPool.query(`
             SELECT u.*, row_to_json(t.*) AS town
             FROM users u
-            LEFT JOIN towns t ON u.id_town = t.id_town
-            INNER JOIN followers f ON f.id_user = u.id_user
+                     LEFT JOIN towns t ON u.id_town = t.id_town
+                     INNER JOIN followers f ON f.id_user = u.id_user
             WHERE f.id_user = $1`, [userId], (error, results) => {
             if (error) return response.status(500).send(error.description);
             response.status(200).json(results.rows);
@@ -58,11 +58,12 @@ router.get('/:id', authToken, (request, response) => {
     if (isNaN(id))
         return response.status(400).send('invalid id');
     hub.dbPool.query(`
-        SELECT u.*, row_to_json(t.*) AS town,
-               jsonb_agg(p.*) FILTER (WHERE p.id_post IS NOT NULL) AS posts
+        SELECT u.*,
+               row_to_json(t.*) AS town,
+               jsonb_agg(p.*)      FILTER (WHERE p.id_post IS NOT NULL) AS posts
         FROM users u
-        LEFT JOIN towns t ON u.id_town = t.id_town
-        LEFT JOIN posts p on u.id_user = p.id_user
+                 LEFT JOIN towns t ON u.id_town = t.id_town
+                 LEFT JOIN posts p on u.id_user = p.id_user
         WHERE u.id_user = $1
         GROUP BY u.id_user, t.* LIMIT 1`, [id], (error, results) => {
         if (error) return response.status(500).send(error.description);
@@ -102,6 +103,28 @@ router.delete('/:id', authToken, (request, response) => {
     });
 });
 
+router.get('/:id/posts', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('Invalid ID');
+    hub.dbPool.query(
+        `SELECT p.*,
+                (CASE WHEN (count(r.id_reaction) > 0) THEN 1 ELSE 0 END) AS is_liked
+         FROM posts p
+         LEFT JOIN reactions r ON p.id_post = r.id_post
+            AND r.reaction = 'like'
+         WHERE p.id_user = $1
+         GROUP BY p.id_post, p.added_on
+         ORDER BY p.added_on DESC`, [id])
+        .then((results) => {
+            response.send(results.rows);
+        })
+        .catch((error) => {
+            console.log(error.stack);
+            response.status(500);
+        });
+})
+
 router.post('/:id/add_friend', authToken, (request, response) => {
     const id = parseInt(request.params.id);
     if (isNaN(id))
@@ -111,7 +134,8 @@ router.post('/:id/add_friend', authToken, (request, response) => {
     try {
         const userId = jwt.decode(token).id_user;
         hub.dbPool.query(`
-            INSERT INTO friends (id_user, id_followed_user) VALUES ($1, $2)`, [userId, id], (error) => {
+            INSERT INTO friends (id_user, id_followed_user)
+            VALUES ($1, $2)`, [userId, id], (error) => {
             if (exists(error, 'code'))
                 if (error.code === '23505') // already friends
                     return response.status(400).send('already followed')
