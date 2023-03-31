@@ -17,8 +17,8 @@ hub.dbPool = new pg.Pool({
     port: process.env.DB_PORT
 });
 
-const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
+const authAdRouter = require('./routes/auth_ad');
 const usersRouter = require('./routes/users');
 const postsRouter = require('./routes/posts');
 
@@ -41,8 +41,8 @@ app.use(fileUpload({
     }
 }));
 
-app.use('/', indexRouter);
 app.use('/auth', authRouter);
+app.use('/auth_ad', authAdRouter);
 app.use('/users', usersRouter);
 app.use('/posts', postsRouter);
 

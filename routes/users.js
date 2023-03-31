@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const hub = require('hub');
 const uniqueId = require('uniqid');
-const authToken = require('../utils');
+const {authToken} = require('../utils');
 const jwt = require("jsonwebtoken");
 const exists = require("property-exists");
 

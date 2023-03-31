@@ -3,21 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const hub = require("hub");
 const uniqueId = require('uniqid');
-const {JWT_SECRET, REFRESH_SECRET} = process.env;
-
-function signAccessToken(user) {
-    return jwt.sign({
-        'id_user': user.id_user,
-        'username': user.username
-    }, JWT_SECRET, {expiresIn: '1h'});
-}
-
-function signRefreshToken(user) {
-    return jwt.sign({
-        'id_user': user.id_user,
-        'username': user.username
-    }, REFRESH_SECRET);
-}
+const {signAccessToken, signRefreshToken} = require('../utils');
 
 function authenticateUser(username, password) {
     return new Promise((resolve, reject) => {
@@ -91,7 +77,7 @@ router.post('/refresh', (req, res) => {
     const refreshToken = req.body.token;
     if (!refreshToken)
         return res.sendStatus(401);
-    jwt.verify(refreshToken, REFRESH_SECRET, (error, user) => {
+    jwt.verify(refreshToken, process.env.REFRESH_SECRET, (error, user) => {
         if (error)
             return res.sendStatus(403);
         const accessToken = signAccessToken(user);

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-function authenticateToken(req, res, next) {
+function authToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (!token)
@@ -13,4 +13,18 @@ function authenticateToken(req, res, next) {
     });
 }
 
-module.exports = authenticateToken;
+function signAccessToken(user) {
+    return jwt.sign({
+        'id_user': user.id_user,
+        'username': user.username
+    }, process.env.JWT_SECRET, {expiresIn: '1h'});
+}
+
+function signRefreshToken(user) {
+    return jwt.sign({
+        'id_user': user.id_user,
+        'username': user.username
+    }, process.env.REFRESH_SECRET);
+}
+
+module.exports = {authToken, signAccessToken, signRefreshToken};

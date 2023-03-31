@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const hub = require('hub');
-const authToken = require('../utils');
+const {authToken} = require('../utils');
 const uniqueId = require('uniqid');
 const jwt = require("jsonwebtoken");
 const path = require("path");
