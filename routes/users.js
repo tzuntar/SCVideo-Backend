@@ -148,4 +148,8 @@ router.post('/:id/add_friend', authToken, (request, response) => {
     }
 })
 
+router.use((req, res) => {
+    res.status(404).send('Not Found');
+});
+
 module.exports = router;

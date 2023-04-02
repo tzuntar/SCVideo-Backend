@@ -85,4 +85,8 @@ router.post('/refresh', (req, res) => {
     });
 });
 
+router.use((req, res) => {
+    res.status(404).send('Not Found');
+});
+
 module.exports = router;
