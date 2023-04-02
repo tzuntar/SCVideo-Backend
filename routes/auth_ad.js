@@ -16,20 +16,40 @@ class User {
 function authenticateAdUser(user) {
     return new Promise((resolve, reject) => {
         hub.dbPool
-            .query('CALL insert_if_not_exists($1, $2, $3, $4, $5)',
-                [user.identifier, user.full_name, user.username, user.email, user.password])
+            .query('SELECT * FROM users u WHERE (u.username = $1)', [user.username])
             .then((results) => {
-                if (results.rows.length !== 1)
-                    return reject();
-                const user = results.rows[0];
-                const accessToken = signAccessToken(user);
-                const refreshToken = signRefreshToken(user);
-                if (!accessToken || !refreshToken)
-                    reject();
-                return resolve({
-                    user: user,
-                    token: {accessToken, refreshToken}
-                });
+                if (results.rows.length > 0) {
+                    const user = results.rows[0];
+                    const accessToken = signAccessToken(user);
+                    const refreshToken = signRefreshToken(user);
+                    if (!accessToken || !refreshToken)
+                        reject();
+                    return resolve({
+                        user: user,
+                        token: {accessToken, refreshToken}
+                    });
+                } else {
+                    hub.dbPool.query(`INSERT INTO users (identifier, full_name, username, email, password)
+                                      VALUES ($1, $2, $3, $4, $5)
+                                      RETURNING *`,
+                        [user.identifier, user.full_name, user.username, user.email, user.password])
+                        .then((results) => {
+                            const user = results.rows[0];
+                            const accessToken = signAccessToken(user);
+                            const refreshToken = signRefreshToken(user);
+                            if (!accessToken || !refreshToken)
+                                reject();
+                            return resolve({
+                                user: user,
+                                token: {accessToken, refreshToken}
+                            });
+                        })
+                        .catch((error) => {
+                            console.log(error.stack);
+                            return reject();
+                        })
+                }
+
             })
             .catch((error) => {
                 console.log(error.stack);
