@@ -7,12 +7,14 @@ const path = require("path");
 const exists = require('property-exists');
 
 router.get('/feed', authToken, (request, response) => {
-    const authHeader = request.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // user limiting disabled for testing purposes
+    //const authHeader = request.headers['authorization'];
+    //const token = authHeader && authHeader.split(' ')[1];
+    //const userId = jwt.decode(token).id_user;
     const {limit, offset} = request.query;
     try {
-        const userId = jwt.decode(token).id_user;
         // ToDo: consider the following: WHERE p.status = 'ready'
+        //  and WHERE u.id_user != $3
         hub.dbPool.query(`
             SELECT p.*,
                    row_to_json(u.*)                                         AS user,
@@ -21,10 +23,9 @@ router.get('/feed', authToken, (request, response) => {
                      LEFT JOIN users u ON p.id_user = u.id_user
                      LEFT JOIN reactions r ON p.id_post = r.id_post
                 AND r.reaction = 'like'
-            WHERE u.id_user != $3
             GROUP BY p.id_post, u.id_user, p.added_on
             ORDER BY p.added_on DESC
-            LIMIT $1 OFFSET $2`, [limit ? limit : 2, offset ? offset : 0, userId], (error, results) => {
+            LIMIT $1 OFFSET $2`, [limit ? limit : 2, offset ? offset : 0], (error, results) => {
             if (error) {
                 console.log(error.description);
                 return response.status(500);
@@ -140,7 +141,7 @@ router.post('/:type', authToken, (request, response) => {
             return response.status(400).send('file missing');
         const {title, description, id_user} = request.body;
         const identifier = uniqueId();
-        if (isNaN(parseInt(id_user)))
+        if (isNaN(parseInt(id_user)) || title == null)
             return response.status(400).send('required parameters missing or invalid');
 
         let contentUri = null;

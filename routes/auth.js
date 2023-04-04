@@ -46,6 +46,7 @@ function registerUser(full_name, username, password) {
 }
 
 router.post('/login', (req, res) => {
+
     const {username, password} = req.body;
     if (username == null || password == null)
         return res.status(400).send('Missing required parameters');
