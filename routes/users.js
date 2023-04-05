@@ -109,16 +109,16 @@ router.get('/:id/posts', authToken, (request, response) => {
         return response.status(400).send('Invalid ID');
     hub.dbPool.query(
         `SELECT p.*,
-                (CASE WHEN (count(r.id_reaction) > 0) THEN 1 ELSE 0 END) AS is_liked
+                row_to_json(u.*)                                         AS user,
+                   (CASE WHEN (count(r.id_reaction) > 0) THEN 1 ELSE 0 END) AS is_liked
          FROM posts p
-         LEFT JOIN reactions r ON p.id_post = r.id_post
-            AND r.reaction = 'like'
+             LEFT JOIN users u ON p.id_user = u.id_user
+             LEFT JOIN reactions r ON p.id_post = r.id_post
+             AND r.reaction = 'like'
          WHERE p.id_user = $1
-         GROUP BY p.id_post, p.added_on
+         GROUP BY p.id_post, u.id_user, p.added_on
          ORDER BY p.added_on DESC`, [id])
-        .then((results) => {
-            response.send(results.rows);
-        })
+        .then((results) => response.send(results.rows))
         .catch((error) => {
             console.log(error.stack);
             response.status(500);

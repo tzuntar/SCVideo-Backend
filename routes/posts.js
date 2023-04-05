@@ -173,6 +173,33 @@ router.post('/:type', authToken, (request, response) => {
     }
 })
 
+router.delete('/:id', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('invalid id');
+    hub.dbPool
+        .query('DELETE FROM reactions WHERE id_post = $1', [id])
+        .then(() => {
+            hub.dbPool.query('DELETE FROM comments WHERE id_post = $1', [id])
+                .then(() => {
+                    hub.dbPool.query('DELETE FROM posts WHERE id_post = $1', [id])
+                        .then(() => response.sendStatus(200))
+                        .catch((error) => {
+                            console.log(error.stack);
+                            return response.sendStatus(500);
+                        });
+                })
+                .catch((error) => {
+                    console.log(error.stack);
+                    return response.sendStatus(500);
+                });
+        })
+        .catch((error) => {
+            console.log(error.stack);
+            return response.sendStatus(500);
+        });
+});
+
 router.use((req, res) => {
     res.status(404).send('Not Found');
 });
