@@ -87,6 +87,21 @@ router.post('/:id/comment', authToken, (request, response) => {
     )
 })
 
+router.delete('/:id/comment/:comment', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('invalid id');
+    const id_comment = request.params.comment
+    if (id_comment == null || isNaN(parseInt(id_comment)))
+        return response.status(400).send('required parameters missing');
+    hub.dbPool.query('DELETE FROM comments WHERE id_comment = $1', [id_comment])
+        .then(() => response.sendStatus(200))
+        .catch(error => {
+            console.log(error.stack)
+            response.sendStatus(500)
+        });
+})
+
 router.post('/:id/like', authToken, (request, response) => {
     const id = parseInt(request.params.id);
     if (isNaN(id))
