@@ -27,4 +27,10 @@ function signRefreshToken(user) {
     }, process.env.REFRESH_SECRET);
 }
 
-module.exports = {authToken, signAccessToken, signRefreshToken};
+function userIdFromAuthHeader(request) {
+    const authHeader = request.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    return jwt.decode(token).id_user;
+}
+
+module.exports = {authToken, signAccessToken, signRefreshToken, userIdFromAuthHeader};
