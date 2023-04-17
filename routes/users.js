@@ -196,7 +196,7 @@ router.get('/:id/friend', authToken, (request, response) => {
         .query(
             `SELECT id_follower FROM followers
              WHERE id_user = $1 AND id_followed_user = $2`, [userId, id])
-        .then(results => response.send (results.rows.count > 0) ? 'true' : 'false')
+        .then(results => response.send (results.rowCount > 0) ? 'true' : 'false')
         .catch(error => {
             console.log(error.stack);
             response.sendStatus(500);
