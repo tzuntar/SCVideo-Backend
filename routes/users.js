@@ -55,7 +55,7 @@ router.get('/friends', authToken, (request, response) => {
         .query(`
             SELECT u.*
             FROM users u
-            INNER JOIN followers f ON f.id_user = u.id_user
+            INNER JOIN followers f ON f.id_followed_user = u.id_user
             WHERE f.id_user = $1`, [userId])
         .then(results => response.json(results.rows))
         .catch(error => {
@@ -186,6 +186,23 @@ router.get('/:id/posts', authToken, (request, response) => {
         });
 });
 
+router.get('/:id/friend', authToken, (request, response) => {
+    const id = parseInt(request.params.id);
+    if (isNaN(id))
+        return response.status(400).send('Invalid ID');
+    const userId = userIdFromAuthHeader(request);
+
+    hub.dbPool
+        .query(
+            `SELECT id_follower FROM followers
+             WHERE id_user = $1 AND id_followed_user = $2`, [userId, id])
+        .then(results => response.send (results.rows.count > 0) ? 'true' : 'false')
+        .catch(error => {
+            console.log(error.stack);
+            response.sendStatus(500);
+        });
+})
+
 router.post('/:id/friend', authToken, (request, response) => {
     const id = parseInt(request.params.id);
     if (isNaN(id))
@@ -194,7 +211,7 @@ router.post('/:id/friend', authToken, (request, response) => {
 
     hub.dbPool
         .query(`
-            INSERT INTO friends (id_user, id_followed_user)
+            INSERT INTO followers (id_user, id_followed_user)
             VALUES ($1, $2)`, [userId, id])
         .then(() => response.sendStatus(200))
         .catch((error) => {
@@ -213,7 +230,7 @@ router.delete('/:id/friend', authToken, (request, response) => {
 
     hub.dbPool
         .query(`
-            DELETE FROM friends
+            DELETE FROM followers
             WHERE id_user = $1 AND id_followed_user = $2`, [userId, id])
         .then(() => response.sendStatus(200))
         .catch((error) => {
